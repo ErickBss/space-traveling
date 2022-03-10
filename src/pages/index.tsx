@@ -1,11 +1,13 @@
 import { FiUser } from 'react-icons/fi';
 import { AiOutlineCalendar } from 'react-icons/ai';
+import Prismic from '@prismicio/client';
 
 import Header from '../components/Header';
 
 import styles from './home.module.scss';
 import Head from 'next/head';
 import { GetStaticProps } from 'next';
+import { getPrismicClient } from '../services/prismic';
 
 export default function Home() {
   return (
@@ -63,8 +65,20 @@ export default function Home() {
 }
 
 export const getStaticProps: GetStaticProps = async () => {
-  const data = {};
+  const prismic = getPrismicClient();
+
+  const posts = await prismic.query(
+    Prismic.predicates.at('document.type', 'post'),
+    {
+      pageSize: 100,
+    }
+  );
+
+  posts.results.map(post => console.log(post.data));
+
   return {
-    props: {},
+    props: {
+      posts,
+    },
   };
 };
