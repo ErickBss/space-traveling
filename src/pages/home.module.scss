@@ -1,10 +1,27 @@
 .container {
   margin: 0 auto;
-  padding-top: 4rem; // 65px
+  padding-top: 4rem;
 
   width: 700px;
   height: calc(100vh - 105px);
 
+  a {
+    display: block;
+
+    margin-top: 4rem;
+
+    font-weight: 600;
+    color: var(--purple);
+
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.articleBlocks {
   h1 {
     color: var(--title-white);
 
@@ -19,11 +36,16 @@
 
     margin-top: 0.5rem; //8px
   }
+
+  & + section {
+    margin-top: 4rem;
+  }
 }
 
 .infoContent {
   display: flex;
   justify-content: space-between;
+  align-items: center;
 
   width: 16.75rem; //268px
   height: 1.375rem; //22px
@@ -34,6 +56,12 @@
 
   font-size: 0.875; //14px
 
-  time {
+  div {
+    display: flex;
+    gap: 0.5rem;
+
+    i {
+      font-size: 1.2rem; //19px
+    }
   }
 }
