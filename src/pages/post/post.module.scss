@@ -1,1 +1,42 @@
-// TODO
+.banner {
+  width: 100vw;
+  max-height: 25rem; //400px
+
+  object-fit: cover;
+}
+
+.container {
+  width: 43.75rem; // 700px
+  height: auto;
+
+  margin: 4rem auto;
+
+  h1 {
+    color: var(--title-white);
+    font-weight: 700;
+
+    margin-bottom: 1.5rem;
+  }
+}
+
+.infoContent {
+  display: flex;
+  gap: 1.5rem;
+
+  div {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    color: var(--gray-500);
+
+    i {
+      display: flex;
+      font-size: 1.2rem; //19px
+    }
+  }
+}
+
+.postContent {
+  margin-top: 4rem;
+}
