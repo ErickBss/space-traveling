@@ -9,7 +9,19 @@ import Head from 'next/head';
 import { GetStaticProps } from 'next';
 import { getPrismicClient } from '../services/prismic';
 
-export default function Home() {
+type Post = {
+  slug: string;
+  title: string;
+  subTitle: string;
+  author: string;
+  date: string;
+};
+interface HomeProps {
+  posts: Post[];
+}
+
+export default function Home({ posts }: HomeProps) {
+  console.log(posts);
   return (
     <>
       <Head>
@@ -19,45 +31,29 @@ export default function Home() {
       <Header />
 
       <main className={styles.container}>
-        <section className={styles.articleBlocks}>
-          <h1>Como utilizar Hooks</h1>
-          <h3>Pensando em sincronização em vez de ciclos de vida.</h3>
-          <div className={styles.infoContent}>
-            <div>
-              <i>
-                <AiOutlineCalendar />
-              </i>
-              <time>15 Mar 2021</time>
-            </div>
+        {posts.map(post => {
+          return (
+            <section key={post.slug} className={styles.articleBlocks}>
+              <h1>{post.title}</h1>
+              <h3>{post.subTitle}</h3>
+              <div className={styles.infoContent}>
+                <div>
+                  <i>
+                    <AiOutlineCalendar />
+                  </i>
+                  <time>{post.date}</time>
+                </div>
 
-            <div>
-              <i>
-                <FiUser />
-              </i>
-              <p>Erick Basso</p>
-            </div>
-          </div>
-        </section>
-
-        <section className={styles.articleBlocks}>
-          <h1>Como utilizar Hooks</h1>
-          <h3>Pensando em sincronização em vez de ciclos de vida.</h3>
-          <div className={styles.infoContent}>
-            <div>
-              <i>
-                <AiOutlineCalendar />
-              </i>
-              <time>15 Mar 2021</time>
-            </div>
-
-            <div>
-              <i>
-                <FiUser />
-              </i>
-              <p>Erick Basso</p>
-            </div>
-          </div>
-        </section>
+                <div>
+                  <i>
+                    <FiUser />
+                  </i>
+                  <p>{post.author}</p>
+                </div>
+              </div>
+            </section>
+          );
+        })}
         <a>Carregar mais posts</a>
       </main>
     </>
@@ -67,14 +63,26 @@ export default function Home() {
 export const getStaticProps: GetStaticProps = async () => {
   const prismic = getPrismicClient();
 
-  const posts = await prismic.query(
+  const response = await prismic.query(
     Prismic.predicates.at('document.type', 'post'),
     {
       pageSize: 100,
     }
   );
 
-  posts.results.map(post => console.log(post.data));
+  const posts = response.results.map(post => {
+    return {
+      slug: post.slugs,
+      title: post.data.title,
+      subTitle: post.data.subtitle,
+      author: post.data.author,
+      date: new Date(post.first_publication_date).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }),
+    };
+  });
 
   return {
     props: {
