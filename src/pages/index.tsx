@@ -1,14 +1,16 @@
 import { FiUser } from 'react-icons/fi';
 import { AiOutlineCalendar } from 'react-icons/ai';
 import Prismic from '@prismicio/client';
+import { format } from 'date-fns';
+import ptBR from 'date-fns/locale/pt-BR';
 
-import Header from '../components/Header';
-
-import styles from './home.module.scss';
 import Head from 'next/head';
 import { GetStaticProps } from 'next';
+import Link from 'next/link';
 import { getPrismicClient } from '../services/prismic';
 import { useState } from 'react';
+
+import styles from './home.module.scss';
 
 type Post = {
   nextPage?: string;
@@ -38,12 +40,11 @@ export default function Home({ posts }: HomeProps) {
           title: dataWay.data.title,
           subTitle: dataWay.data.subtitle,
           author: dataWay.data.author,
-          date: new Date(dataWay.first_publication_date).toLocaleDateString(
-            'pt-BR',
+          date: format(
+            new Date(dataWay.first_publication_date),
+            "dd 'de' MMM yyyy",
             {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric',
+              locale: ptBR,
             }
           ),
         };
@@ -51,19 +52,20 @@ export default function Home({ posts }: HomeProps) {
     const listOfMorePosts = [...morePosts, response];
     setMorePosts(listOfMorePosts);
   }
+
   return (
     <>
       <Head>
         <title>Home | spacetraveling</title>
       </Head>
 
-      <Header />
-
       <main className={styles.container}>
         {posts.map(post => {
           return (
             <section key={post.slug} className={styles.articleBlocks}>
-              <h1>{post.title}</h1>
+              <Link href={`/post/${post.slug}`}>
+                <h1>{post.title}</h1>
+              </Link>
               <h3>{post.subTitle}</h3>
               <div className={styles.infoContent}>
                 <div>
@@ -86,7 +88,9 @@ export default function Home({ posts }: HomeProps) {
         {morePosts.map(post => {
           return (
             <section key={post.slug} className={styles.articleBlocks}>
-              <h1>{post.title}</h1>
+              <Link href={`/post/${post.slug}`}>
+                <h1>{post.title}</h1>
+              </Link>
               <h3>{post.subTitle}</h3>
               <div className={styles.infoContent}>
                 <div>
@@ -132,10 +136,8 @@ export const getStaticProps: GetStaticProps = async () => {
       title: post.data.title,
       subTitle: post.data.subtitle,
       author: post.data.author,
-      date: new Date(post.first_publication_date).toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
+      date: format(new Date(post.first_publication_date), "dd 'de' MMM yyyy", {
+        locale: ptBR,
       }),
     };
   });

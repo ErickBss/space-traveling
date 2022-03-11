@@ -33,6 +33,14 @@
 
     font-size: 1.75rem; //28px
     font-weight: bold;
+
+    cursor: pointer;
+
+    transition: filter 0.2s;
+
+    &:hover {
+      filter: brightness(50%);
+    }
   }
 
   h3 {
