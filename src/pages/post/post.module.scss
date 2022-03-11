@@ -39,4 +39,19 @@
 
 .postContent {
   margin-top: 4rem;
+
+  color: var(--gray-200);
+
+  line-height: 1.575rem; // 25.2px
+  text-align: justify;
+  font-size: 1.125rem; //18px
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  p + p {
+    margin-top: 1rem;
+  }
 }

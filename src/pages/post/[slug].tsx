@@ -61,10 +61,10 @@ export default function Post({ post }: PostProps) {
           </div>
         </section>
 
-        <div className={styles.postContent}>
+        <article className={styles.postContent}>
           <h1>{post.heading}</h1>
-          <span>{post.content}</span>
-        </div>
+          <div dangerouslySetInnerHTML={{ __html: post.content }} />
+        </article>
       </main>
     </>
   );
@@ -82,12 +82,6 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
 
   const response = await prismic.getByUID('post', String(params.slug), {});
 
-  const contentBlock = response.data.content;
-  const content = contentBlock.map(contentData => {
-    return RichText.asText(contentData.body);
-  });
-  console.log(response.data.content[0].body);
-
   const post = {
     slug: response.uid,
     image: response.data.banner.url,
@@ -101,7 +95,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     ),
     author: response.data.author,
     heading: response.data.content[0].heading,
-    content: RichText.asText(response.data.content[0].body),
+    content: RichText.asHtml(response.data.content[0].body),
   };
 
   return {
