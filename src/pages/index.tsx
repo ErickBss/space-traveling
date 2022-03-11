@@ -8,8 +8,10 @@ import styles from './home.module.scss';
 import Head from 'next/head';
 import { GetStaticProps } from 'next';
 import { getPrismicClient } from '../services/prismic';
+import { useState } from 'react';
 
 type Post = {
+  nextPage?: string;
   slug: string;
   title: string;
   subTitle: string;
@@ -21,7 +23,34 @@ interface HomeProps {
 }
 
 export default function Home({ posts }: HomeProps) {
-  console.log(posts);
+  const [morePosts, setMorePosts] = useState<Post[]>([]);
+  const [nextPost, setNextPost] = useState(posts[0].nextPage);
+
+  async function handleMorePosts() {
+    const response = await fetch(nextPost)
+      .then(response => response.json())
+      .then(post => {
+        let dataWay = post.results[0];
+
+        setNextPost(post.next_page);
+        return {
+          slug: dataWay.slugs,
+          title: dataWay.data.title,
+          subTitle: dataWay.data.subtitle,
+          author: dataWay.data.author,
+          date: new Date(dataWay.first_publication_date).toLocaleDateString(
+            'pt-BR',
+            {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            }
+          ),
+        };
+      });
+    const listOfMorePosts = [...morePosts, response];
+    setMorePosts(listOfMorePosts);
+  }
   return (
     <>
       <Head>
@@ -54,7 +83,31 @@ export default function Home({ posts }: HomeProps) {
             </section>
           );
         })}
-        <a>Carregar mais posts</a>
+        {morePosts.map(post => {
+          return (
+            <section key={post.slug} className={styles.articleBlocks}>
+              <h1>{post.title}</h1>
+              <h3>{post.subTitle}</h3>
+              <div className={styles.infoContent}>
+                <div>
+                  <i>
+                    <AiOutlineCalendar />
+                  </i>
+                  <time>{post.date}</time>
+                </div>
+
+                <div>
+                  <i>
+                    <FiUser />
+                  </i>
+                  <p>{post.author}</p>
+                </div>
+              </div>
+            </section>
+          );
+        })}
+
+        <a onClick={handleMorePosts}>{nextPost ? 'Carregar mais posts' : ''}</a>
       </main>
     </>
   );
@@ -66,12 +119,15 @@ export const getStaticProps: GetStaticProps = async () => {
   const response = await prismic.query(
     Prismic.predicates.at('document.type', 'post'),
     {
-      pageSize: 100,
+      pageSize: 1,
     }
   );
 
+  const nextPage = response.next_page;
+
   const posts = response.results.map(post => {
     return {
+      nextPage,
       slug: post.slugs,
       title: post.data.title,
       subTitle: post.data.subtitle,
