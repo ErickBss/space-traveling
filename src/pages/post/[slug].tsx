@@ -1,6 +1,6 @@
 import { RichText } from 'prismic-dom';
 
-import { GetStaticProps } from 'next';
+import { GetStaticPaths, GetStaticProps } from 'next';
 
 import { FiUser } from 'react-icons/fi';
 import { AiOutlineCalendar, AiOutlineClockCircle } from 'react-icons/ai';
@@ -11,31 +11,45 @@ import ptBR from 'date-fns/locale/pt-BR';
 import readingTime from 'reading-time';
 
 import { getPrismicClient } from '../../services/prismic';
+import Prismic from '@prismicio/client';
 
 import styles from './post.module.scss';
+import { useEffect, useState } from 'react';
 
-type PostProps = {
-  post: {
-    slug: string;
-    image: string;
+interface Post {
+  uid: string;
+  first_publication_date: string | null;
+  data: {
     title: string;
-    date: string;
+    banner: {
+      url: string;
+    };
     author: string;
-    heading: string;
-    content: string;
+    content: {
+      heading: string;
+      body: {
+        text: string;
+      };
+    };
   };
-};
+}
+
+interface PostProps {
+  post: Post;
+}
 
 export default function Post({ post }: PostProps) {
-  const { minutes } = readingTime(post.content);
+  const [treatedPostData, setTreatedPostData] = useState({});
+
+  const { minutes } = readingTime(post.data.content.body.text);
   const estimatedTime = Math.ceil(minutes) + ' min';
 
   return (
     <>
-      <img className={styles.banner} src={post.image} />
+      <img className={styles.banner} src={post.data.banner.url} />
 
       <main className={styles.container}>
-        <h1>{post.title}</h1>
+        <h1>{post.data.title}</h1>
 
         <section className={styles.infoContent}>
           <div>
@@ -43,14 +57,14 @@ export default function Post({ post }: PostProps) {
               <AiOutlineCalendar />
             </i>
 
-            <time>{post.date}</time>
+            <time>{post.first_publication_date}</time>
           </div>
 
           <div>
             <i>
               <FiUser />
             </i>
-            <p>{post.author}</p>
+            <p>{post.data.author}</p>
           </div>
           <div>
             <i>
@@ -62,45 +76,69 @@ export default function Post({ post }: PostProps) {
         </section>
 
         <article className={styles.postContent}>
-          <h1>{post.heading}</h1>
-          <div dangerouslySetInnerHTML={{ __html: post.content }} />
+          <h1>{post.data.content.heading}</h1>
+          <div
+            dangerouslySetInnerHTML={{ __html: post.data.content.body.text }}
+          />
         </article>
       </main>
     </>
   );
 }
 
-export const getStaticPaths = () => {
+export const getStaticPaths: GetStaticPaths = async () => {
+  const prismic = getPrismicClient();
+
+  const postsResponse = await prismic.query(
+    Prismic.predicates.at('document.type', 'post'),
+    {
+      pageSize: 100,
+    }
+  );
+
+  const slugPosts = postsResponse.results.map(uid => {
+    return uid.uid;
+  });
+
   return {
-    paths: [],
+    paths: [
+      {
+        params: { slug: slugPosts[0] },
+      },
+      {
+        params: { slug: slugPosts[1] },
+      },
+    ],
     fallback: 'blocking',
   };
 };
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
-  const prismic = await getPrismicClient();
+  const prismic = getPrismicClient();
 
-  const response = await prismic.getByUID('post', String(params.slug), {});
+  const postResponse = await prismic.getByUID('post', String(params.slug), {});
 
-  const post = {
-    slug: response.uid,
-    image: response.data.banner.url,
-    title: response.data.title,
-    date: format(
-      new Date(response.first_publication_date),
-      "dd 'de' MMM yyyy",
-      {
-        locale: ptBR,
-      }
-    ),
-    author: response.data.author,
-    heading: response.data.content[0].heading,
-    content: RichText.asHtml(response.data.content[0].body),
+  const rawPostData = {
+    uid: postResponse.uid,
+    first_publication_date: postResponse.first_publication_date,
+    data: {
+      title: postResponse.data.title,
+      banner: {
+        url: postResponse.data.banner.url,
+      },
+      author: postResponse.data.author,
+      content: {
+        heading: postResponse.data.content[0].heading,
+        body: {
+          text: RichText.asHtml(postResponse.data.content[0].body),
+        },
+      },
+    },
   };
 
   return {
     props: {
-      post,
+      post: rawPostData,
     },
   };
 };

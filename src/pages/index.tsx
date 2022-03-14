@@ -8,49 +8,83 @@ import Head from 'next/head';
 import { GetStaticProps } from 'next';
 import Link from 'next/link';
 import { getPrismicClient } from '../services/prismic';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import styles from './home.module.scss';
+import Post from './post/[slug]';
 
-type Post = {
-  nextPage?: string;
-  slug: string;
-  title: string;
-  subTitle: string;
-  author: string;
-  date: string;
-};
-interface HomeProps {
-  posts: Post[];
+interface Post {
+  uid?: string;
+  first_publication_date: string | null;
+  data: {
+    title: string;
+    subtitle: string;
+    author: string;
+  };
 }
 
-export default function Home({ posts }: HomeProps) {
-  const [morePosts, setMorePosts] = useState<Post[]>([]);
-  const [nextPost, setNextPost] = useState(posts[0].nextPage);
+interface PostPagination {
+  next_page: string;
+  results: Post[];
+}
+
+interface HomeProps {
+  postsPagination: PostPagination;
+}
+
+export default function Home({ postsPagination }: HomeProps) {
+  const [postsList, setPostsList] = useState<Post[]>([]);
+
+  useEffect(() => {
+    const formatPosts = postsPagination.results.map(post => {
+      return {
+        uid: post.uid,
+        first_publication_date: format(
+          new Date(post.first_publication_date),
+          'dd MMM yyyy',
+          {
+            locale: ptBR,
+          }
+        ),
+        data: {
+          title: post.data.title,
+          subtitle: post.data.subtitle,
+          author: post.data.author,
+        },
+      };
+    });
+
+    setPostsList(formatPosts);
+  }, []);
 
   async function handleMorePosts() {
-    const response = await fetch(nextPost)
+    const response: Post = await fetch(postsPagination.next_page)
       .then(response => response.json())
       .then(post => {
         let dataWay = post.results[0];
 
-        setNextPost(post.next_page);
+        postsPagination.next_page = post.next_page;
+
         return {
-          slug: dataWay.slugs,
-          title: dataWay.data.title,
-          subTitle: dataWay.data.subtitle,
-          author: dataWay.data.author,
-          date: format(
+          uid: dataWay.uid,
+          first_publication_date: format(
             new Date(dataWay.first_publication_date),
-            "dd 'de' MMM yyyy",
+            'dd MMM yyyy',
             {
               locale: ptBR,
             }
           ),
+          data: {
+            title: dataWay.data.title,
+            subtitle: dataWay.data.subtitle,
+            author: dataWay.data.author,
+          },
         };
       });
-    const listOfMorePosts = [...morePosts, response];
-    setMorePosts(listOfMorePosts);
+
+    const updatedPostsList = [...postsList, response];
+
+    setPostsList(updatedPostsList);
   }
 
   return (
@@ -60,58 +94,34 @@ export default function Home({ posts }: HomeProps) {
       </Head>
 
       <main className={styles.container}>
-        {posts.map(post => {
+        {postsList.map(post => {
           return (
-            <section key={post.slug} className={styles.articleBlocks}>
-              <Link href={`/post/${post.slug}`}>
-                <h1>{post.title}</h1>
+            <section key={post.uid} className={styles.articleBlocks}>
+              <Link href={`/post/${post.uid}`}>
+                <h1>{post.data.title}</h1>
               </Link>
-              <h3>{post.subTitle}</h3>
+              <h3>{post.data.subtitle}</h3>
               <div className={styles.infoContent}>
                 <div>
                   <i>
                     <AiOutlineCalendar />
                   </i>
-                  <time>{post.date}</time>
+                  <time>{post.first_publication_date}</time>
                 </div>
 
                 <div>
                   <i>
                     <FiUser />
                   </i>
-                  <p>{post.author}</p>
+                  <p>{post.data.author}</p>
                 </div>
               </div>
             </section>
           );
         })}
-        {morePosts.map(post => {
-          return (
-            <section key={post.slug} className={styles.articleBlocks}>
-              <Link href={`/post/${post.slug}`}>
-                <h1>{post.title}</h1>
-              </Link>
-              <h3>{post.subTitle}</h3>
-              <div className={styles.infoContent}>
-                <div>
-                  <i>
-                    <AiOutlineCalendar />
-                  </i>
-                  <time>{post.date}</time>
-                </div>
-
-                <div>
-                  <i>
-                    <FiUser />
-                  </i>
-                  <p>{post.author}</p>
-                </div>
-              </div>
-            </section>
-          );
-        })}
-
-        <a onClick={handleMorePosts}>{nextPost ? 'Carregar mais posts' : ''}</a>
+        <a onClick={handleMorePosts}>
+          {postsPagination.next_page ? 'Carregar mais posts' : ''}
+        </a>
       </main>
     </>
   );
@@ -120,31 +130,31 @@ export default function Home({ posts }: HomeProps) {
 export const getStaticProps: GetStaticProps = async () => {
   const prismic = getPrismicClient();
 
-  const response = await prismic.query(
+  const postsResponse = await prismic.query(
     Prismic.predicates.at('document.type', 'post'),
     {
-      pageSize: 1,
+      pageSize: 2,
     }
   );
 
-  const nextPage = response.next_page;
-
-  const posts = response.results.map(post => {
+  const results = postsResponse.results.map(post => {
     return {
-      nextPage,
-      slug: post.slugs,
-      title: post.data.title,
-      subTitle: post.data.subtitle,
-      author: post.data.author,
-      date: format(new Date(post.first_publication_date), "dd 'de' MMM yyyy", {
-        locale: ptBR,
-      }),
+      uid: post.uid,
+      first_publication_date: post.first_publication_date,
+      data: {
+        title: post.data.title,
+        subtitle: post.data.subtitle,
+        author: post.data.author,
+      },
     };
   });
 
   return {
     props: {
-      posts,
+      postsPagination: {
+        results,
+        next_page: postsResponse.next_page,
+      },
     },
   };
 };
