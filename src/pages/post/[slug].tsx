@@ -15,9 +15,9 @@ import Prismic from '@prismicio/client';
 
 import styles from './post.module.scss';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 
 interface Post {
-  uid: string;
   first_publication_date: string | null;
   data: {
     title: string;
@@ -29,8 +29,8 @@ interface Post {
       heading: string;
       body: {
         text: string;
-      };
-    };
+      }[];
+    }[];
   };
 }
 
@@ -39,17 +39,55 @@ interface PostProps {
 }
 
 export default function Post({ post }: PostProps) {
-  const [treatedPostData, setTreatedPostData] = useState({});
+  const [formattedPost, setFormattedPost] = useState<Post>();
+  const router = useRouter();
 
-  const { minutes } = readingTime(post.data.content.body.text);
-  const estimatedTime = Math.ceil(minutes) + ' min';
+  if (router.isFallback) {
+    return <h2>Carregando...</h2>;
+  }
+
+  useEffect(() => {
+    const formattingPostData = {
+      first_publication_date: format(
+        new Date(post.first_publication_date),
+        'dd MMM yyyy',
+        {
+          locale: ptBR,
+        }
+      ),
+      data: {
+        title: post.data.title,
+        banner: {
+          url: post.data.banner.url,
+        },
+        author: post.data.author,
+        content: [
+          {
+            heading: post.data.content[0].heading,
+            body: [
+              {
+                text: RichText.asHtml(post.data.content[0].body[0].text),
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    setFormattedPost(formattingPostData);
+  }, []);
+
+  const calcRawEstimatedNumber = Math.ceil(
+    formattedPost?.data.content[0].body[0].text.length / 200
+  );
+  const estimatedTime = calcRawEstimatedNumber + ' min';
 
   return (
     <>
-      <img className={styles.banner} src={post.data.banner.url} />
+      <img className={styles.banner} src={formattedPost?.data.banner.url} />
 
       <main className={styles.container}>
-        <h1>{post.data.title}</h1>
+        <h1>{formattedPost?.data.title}</h1>
 
         <section className={styles.infoContent}>
           <div>
@@ -57,14 +95,14 @@ export default function Post({ post }: PostProps) {
               <AiOutlineCalendar />
             </i>
 
-            <time>{post.first_publication_date}</time>
+            <time>{formattedPost?.first_publication_date}</time>
           </div>
 
           <div>
             <i>
               <FiUser />
             </i>
-            <p>{post.data.author}</p>
+            <p>{formattedPost?.data.author}</p>
           </div>
           <div>
             <i>
@@ -76,9 +114,11 @@ export default function Post({ post }: PostProps) {
         </section>
 
         <article className={styles.postContent}>
-          <h1>{post.data.content.heading}</h1>
+          <h1>{formattedPost?.data.content[0].heading}</h1>
           <div
-            dangerouslySetInnerHTML={{ __html: post.data.content.body.text }}
+            dangerouslySetInnerHTML={{
+              __html: formattedPost?.data.content[0].body[0].text,
+            }}
           />
         </article>
       </main>
@@ -119,7 +159,6 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   const postResponse = await prismic.getByUID('post', String(params.slug), {});
 
   const rawPostData = {
-    uid: postResponse.uid,
     first_publication_date: postResponse.first_publication_date,
     data: {
       title: postResponse.data.title,
@@ -127,12 +166,16 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
         url: postResponse.data.banner.url,
       },
       author: postResponse.data.author,
-      content: {
-        heading: postResponse.data.content[0].heading,
-        body: {
-          text: RichText.asHtml(postResponse.data.content[0].body),
+      content: [
+        {
+          heading: postResponse.data.content[0].heading,
+          body: [
+            {
+              text: postResponse.data.content[0].body,
+            },
+          ],
         },
-      },
+      ],
     },
   };
 
