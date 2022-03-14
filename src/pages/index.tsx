@@ -34,6 +34,7 @@ interface HomeProps {
 
 export default function Home({ postsPagination }: HomeProps) {
   const [postsList, setPostsList] = useState<Post[]>([]);
+  const [nextPage, setNextPage] = useState(postsPagination.next_page);
 
   useEffect(() => {
     const formatPosts = postsPagination.results.map(post => {
@@ -63,7 +64,7 @@ export default function Home({ postsPagination }: HomeProps) {
       .then(post => {
         let dataWay = post.results[0];
 
-        postsPagination.next_page = post.next_page;
+        setNextPage(post.next_page);
 
         return {
           uid: dataWay.uid,
@@ -119,9 +120,7 @@ export default function Home({ postsPagination }: HomeProps) {
             </section>
           );
         })}
-        <a onClick={handleMorePosts}>
-          {postsPagination.next_page ? 'Carregar mais posts' : ''}
-        </a>
+        <a onClick={handleMorePosts}>{nextPage ? 'Carregar mais posts' : ''}</a>
       </main>
     </>
   );
