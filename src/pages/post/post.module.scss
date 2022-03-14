@@ -55,3 +55,51 @@
     margin-top: 1rem;
   }
 }
+
+.divisor {
+  opacity: 0.1;
+  border: 1px solid var(--gray-200);
+  margin: 4rem 0;
+}
+
+.navPosts {
+  width: 43.75rem;
+
+  display: flex;
+  justify-content: space-between;
+
+  div {
+    color: var(--title-white);
+    font-size: 1.125rem; //18px
+
+    a {
+      display: block;
+      padding-top: 0.5rem;
+
+      text-decoration: none;
+
+      color: var(--purple);
+      font-size: 1rem;
+      font-weight: 600;
+
+      cursor: pointer;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    &:first-child {
+      flex: 1;
+      text-align: left;
+
+      p {
+      }
+    }
+
+    &:last-child {
+      flex: 1;
+      text-align: right;
+    }
+  }
+}

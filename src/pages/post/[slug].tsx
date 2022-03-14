@@ -1,5 +1,6 @@
 import { RichText } from 'prismic-dom';
 
+import Link from 'next/link';
 import { GetStaticPaths, GetStaticProps } from 'next';
 
 import { FiUser } from 'react-icons/fi';
@@ -7,8 +8,6 @@ import { AiOutlineCalendar, AiOutlineClockCircle } from 'react-icons/ai';
 
 import { format } from 'date-fns';
 import ptBR from 'date-fns/locale/pt-BR';
-
-import readingTime from 'reading-time';
 
 import { getPrismicClient } from '../../services/prismic';
 import Prismic from '@prismicio/client';
@@ -34,11 +33,18 @@ interface Post {
   };
 }
 
-interface PostProps {
-  post: Post;
+interface PreviousAndNextPost {
+  uid: string;
+  title: string;
 }
 
-export default function Post({ post }: PostProps) {
+interface PostProps {
+  post: Post;
+  previousPost?: PreviousAndNextPost;
+  nextPost?: PreviousAndNextPost;
+}
+
+export default function Post({ post, previousPost, nextPost }: PostProps) {
   const [formattedPost, setFormattedPost] = useState<Post>();
   const router = useRouter();
 
@@ -76,6 +82,11 @@ export default function Post({ post }: PostProps) {
 
     setFormattedPost(formattingPostData);
   }, []);
+
+  function handleRedirectPage(slug: string) {
+    router.push(`/post/${slug}`);
+    router.reload();
+  }
 
   const calcRawEstimatedNumber = Math.ceil(
     formattedPost?.data.content[0].body[0].text.length / 200
@@ -121,6 +132,24 @@ export default function Post({ post }: PostProps) {
             }}
           />
         </article>
+        <hr className={styles.divisor} />
+
+        <nav className={styles.navPosts}>
+          <div>
+            <p>{previousPost ? previousPost.title : ''}</p>
+            <a onClick={() => handleRedirectPage(previousPost.uid)}>
+              {previousPost ? 'Post anterior' : ''}
+            </a>
+          </div>
+
+          <div>
+            <p>{nextPost ? nextPost.title : ''}</p>
+
+            <a onClick={() => handleRedirectPage(nextPost.uid)}>
+              {nextPost ? 'Próximo post' : ''}
+            </a>
+          </div>
+        </nav>
       </main>
     </>
   );
@@ -156,6 +185,28 @@ export const getStaticPaths: GetStaticPaths = async () => {
 export const getStaticProps: GetStaticProps = async ({ params }) => {
   const prismic = getPrismicClient();
 
+  const allPosts = await prismic.query(
+    Prismic.predicates.at('document.type', 'post'),
+    {
+      pageSize: 100,
+    }
+  );
+
+  const searchSelectedPostIndex = allPosts.results.findIndex(
+    post => post.uid === params.slug
+  );
+
+  const getPreviousAndNextPost = {
+    previousPost: {
+      uid: allPosts.results[searchSelectedPostIndex - 1]?.uid,
+      title: allPosts.results[searchSelectedPostIndex - 1]?.data.title,
+    },
+    nextPost: {
+      uid: allPosts.results[searchSelectedPostIndex + 1]?.uid,
+      title: allPosts.results[searchSelectedPostIndex + 1]?.data.title,
+    },
+  };
+
   const postResponse = await prismic.getByUID('post', String(params.slug), {});
 
   const rawPostData = {
@@ -182,6 +233,12 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   return {
     props: {
       post: rawPostData,
+      previousPost: getPreviousAndNextPost.previousPost?.uid
+        ? getPreviousAndNextPost.previousPost
+        : null,
+      nextPost: getPreviousAndNextPost.nextPost?.uid
+        ? getPreviousAndNextPost.nextPost
+        : null,
     },
   };
 };
