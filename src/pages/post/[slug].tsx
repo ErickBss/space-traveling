@@ -96,9 +96,9 @@ export default function Post({ post, previousPost, nextPost }: PostProps) {
     setFormattedPost(formattingPostData);
   }, []);
 
-  function handleRedirectPage(slug: string) {
+  async function handleRedirectPage(slug: string) {
+    await router.push(`/post/${slug}`);
     router.reload();
-    router.push(`/post/${slug}`);
   }
 
   const calcRawEstimatedNumber = Math.ceil(
