@@ -15,6 +15,7 @@ import Prismic from '@prismicio/client';
 import styles from './post.module.scss';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { Comments } from '../../components/utteranceComments/ index';
 
 interface Post {
   first_publication_date: string | null;
@@ -165,6 +166,8 @@ export default function Post({ post, previousPost, nextPost }: PostProps) {
             </a>
           </div>
         </nav>
+
+        <Comments />
       </main>
     </>
   );
