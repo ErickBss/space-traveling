@@ -18,6 +18,7 @@ import { useRouter } from 'next/router';
 
 interface Post {
   first_publication_date: string | null;
+  last_publication_date: string;
   data: {
     title: string;
     banner: {
@@ -65,6 +66,13 @@ export default function Post({ post, previousPost, nextPost }: PostProps) {
           locale: ptBR,
         }
       ),
+      last_publication_date: format(
+        new Date(post.last_publication_date),
+        "'* editado em' dd MMM yyyy', ás' h:m",
+        {
+          locale: ptBR,
+        }
+      ),
       data: {
         title: post.data.title,
         banner: {
@@ -88,8 +96,8 @@ export default function Post({ post, previousPost, nextPost }: PostProps) {
   }, []);
 
   function handleRedirectPage(slug: string) {
-    router.push(`/post/${slug}`);
     router.reload();
+    router.push(`/post/${slug}`);
   }
 
   const calcRawEstimatedNumber = Math.ceil(
@@ -127,6 +135,9 @@ export default function Post({ post, previousPost, nextPost }: PostProps) {
             <time>{estimatedTime}</time>
           </div>
         </section>
+        <p className={styles.lastUpdate}>
+          {formattedPost?.last_publication_date}
+        </p>
 
         <article className={styles.postContent}>
           <h1>{formattedPost?.data.content[0].heading}</h1>
@@ -189,6 +200,8 @@ export const getStaticPaths: GetStaticPaths = async () => {
 export const getStaticProps: GetStaticProps = async ({ params }) => {
   const prismic = getPrismicClient();
 
+  //Search previous and next post
+
   const allPosts = await prismic.query(
     Prismic.predicates.at('document.type', 'post'),
     {
@@ -211,10 +224,13 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     },
   };
 
+  // End logic prev. and next.
+
   const postResponse = await prismic.getByUID('post', String(params.slug), {});
 
   const rawPostData = {
     first_publication_date: postResponse.first_publication_date,
+    last_publication_date: postResponse.last_publication_date,
     data: {
       title: postResponse.data.title,
       banner: {
