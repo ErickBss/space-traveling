@@ -53,6 +53,10 @@ export default function Post({ post, previousPost, nextPost }: PostProps) {
   }
 
   useEffect(() => {
+    router.prefetch(`/posts/${previousPost?.uid}`);
+    router.prefetch(`/posts/${nextPost?.uid}`);
+    router.prefetch(`/`);
+
     const formattingPostData = {
       first_publication_date: format(
         new Date(post.first_publication_date),
